@@ -1,0 +1,25 @@
+{
+  "name": "vender",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "scripts"
+  ],
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "packageManager": "bun@1.1.22",
+  "scripts": {
+    "build": "echo \"Use workspace builds: bun --filter @vender/* run build\"",
+    "dev": "echo \"Use workspace dev commands, e.g. bun workspace @vender/api run dev\"",
+    "typecheck": "echo \"Use workspace typecheck: bun --filter @vender/* run typecheck\""
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@types/prompts": "^2.4.9"
+  }
+}

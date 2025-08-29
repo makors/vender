@@ -1,0 +1,16 @@
+{
+  "name": "@vender/scanner-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scan": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9"
+  }
+}

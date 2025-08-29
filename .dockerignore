@@ -1,0 +1,12 @@
+.git
+node_modules
+dist
+build
+.cache
+.vite
+coverage
+*.log
+.env
+.env.*
+data
+
