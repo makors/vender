@@ -34,7 +34,7 @@ function getTransporter(): nodemailer.Transporter {
 }
 
 export async function generateTicketQrPng(ticketId: string): Promise<Buffer> {
-  // Encode minimal content: just the ticket ID as requested
+  // minimal, just the ticket id (which is supposedly private in this case)
   return QRCode.toBuffer(ticketId, {
     type: "png",
     errorCorrectionLevel: "M",
@@ -47,17 +47,17 @@ export async function sendTicketSuccessEmail(params: TicketSuccessParams): Promi
   const { studentName, recipientEmail, ticketId, eventName } = params;
 
   const fromEmail = process.env["SMTP_FROM"] || process.env["SMTP_USER"] || "no-reply@example.com";
-  const fromName = process.env["SMTP_FROM_NAME"] || "RRMS PTSO Tickets";
+  const fromName = process.env["SMTP_FROM_NAME"] || "Vender Tickets";
 
   const transporter = getTransporter();
   const qrPng = await generateTicketQrPng(ticketId);
-  const qrCid = `ticket-${ticketId}@rrms-ptso`;
+  const qrCid = `ticket-${ticketId}@vender`;
 
-  const subject = `Your RRMS PTSO ticket for ${eventName}`;
+  const subject = `Your ticket for ${eventName}`;
   const textBody = [
     `Hi ${studentName},`,
     "",
-    `Your RRMS PTSO ticket for ${eventName} is confirmed — yay!`,
+    `Your ticket for ${eventName} is confirmed — yay!`,
     "",
     `Ticket ID: ${ticketId}`,
     "",
@@ -69,7 +69,7 @@ export async function sendTicketSuccessEmail(params: TicketSuccessParams): Promi
 
   const htmlBody = [
     `<p>Hi ${studentName},</p>`,
-    `<p>Your RRMS PTSO ticket for <strong>${eventName}</strong> is confirmed — yay!</p>`,
+    `<p>Your for <strong>${eventName}</strong> is confirmed — yay!</p>`,
     `<p><strong>Ticket ID:</strong> ${ticketId}</p>`,
     `<p><strong>Please print this QR code and give it to your child</strong> to bring to check-in:</p>`,
     `<p><img src="cid:${qrCid}" alt="Ticket QR Code" style="max-width:300px;height:auto;" /></p>`,

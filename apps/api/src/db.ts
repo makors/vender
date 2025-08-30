@@ -33,20 +33,6 @@ db.run(`
     )
 `);
 
-// Migrations: add missing columns/indexes safely if upgrading from older schema
-try {
-    const columns = db.query(`PRAGMA table_info(tickets)`).all() as Array<{ name: string }>;
-    const hasStudentName = columns.some((c) => c.name === "student_name");
-    if (!hasStudentName) {
-        db.run(`ALTER TABLE tickets ADD COLUMN student_name TEXT`);
-    }
-} catch (err) {
-    // no-op; best-effort migration
-}
-
-// Helpful indexes
-db.run(`CREATE INDEX IF NOT EXISTS idx_tickets_student_name ON tickets(student_name)`);
-
 db.run(`
     CREATE TABLE IF NOT EXISTS customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,9 +1,10 @@
+#!/usr/bin/env node
 import prompts from "prompts";
 import { green, yellow, red, bold, dim, cyan } from "kolorist";
 
 const API_URL = process.env["API_URL"] || "http://localhost:3001";
 
-// Ensure Ctrl+C exits immediately even if a prompt is active
+// exit on ctrl c!
 process.on("SIGINT", () => {
     console.log("\n" + dim("Exiting"));
     process.exit(0);

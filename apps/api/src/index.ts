@@ -7,7 +7,7 @@ import { lookup } from "./routes/lookup";
 Bun.serve({
   port: 3001,
   routes: {
-    "/": Response.redirect("https://ronaldreaganms.pwcs.edu"),
+    "/": () => new Response("tickets are coming soon"),
     "/checkout/:event_id": checkout,
     "/checkout/success": success,
     "/checkout/cancel": cancel,

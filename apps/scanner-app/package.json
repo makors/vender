@@ -1,9 +1,22 @@
 {
   "name": "@vender/scanner-app",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "CLI to scan and look up tickets against the Vender API",
   "type": "module",
+  "bin": {
+    "vender": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "bun run build",
+    "dev": "bun run src/index.ts",
     "scan": "bun run src/index.ts"
   },
   "dependencies": {
@@ -11,6 +24,11 @@
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/prompts": "^2.4.9"
+    "@types/node": "^22.8.0",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
