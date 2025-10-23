@@ -1,3 +1,6 @@
 # bunfig.toml for monorepo
 # Using npm workspaces declared in package.json
 
+[install]
+registry = "https://registry.npmjs.org/"
+
