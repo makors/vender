@@ -1,54 +1,50 @@
-# Multi-stage build for Next.js app (scanner-web)
+# -----------------------------------------------------------------------------
+# Simplified Dockerfile for Vender Scanner Web
+# -----------------------------------------------------------------------------
 
-# 1) Builder image: install deps and build
-FROM node:20-alpine AS builder
+# 1. Builder Stage: Build the Next.js application
+FROM oven/bun:1 AS builder
+
+# Set the working directory
 WORKDIR /app
 
-# Install OS deps
+# Copy the entire monorepo context
+COPY . .
+
+# Install all dependencies
+RUN bun install --frozen-lockfile
+
+# Build the specific workspace
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN bun run --filter @vender/scanner-web build
+
+
+# 2. Runner Stage: Run the standalone Next.js server
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
+
+# Required for sharp on Alpine Linux
 RUN apk add --no-cache libc6-compat
 
-# Copy only scanner-web to speed up Docker builds, but include root config for pnpm/npm if needed
-COPY apps/scanner-web/package.json ./apps/scanner-web/package.json
-COPY package.json bun.lock bunfig.toml tsconfig.base.json ./
-COPY apps/scanner-web ./apps/scanner-web
+# Copy the standalone server output from the builder
+COPY --from=builder /app/apps/scanner-web/.next/standalone ./
 
-WORKDIR /app/apps/scanner-web
+# Copy public and static assets
+COPY --from=builder /app/apps/scanner-web/public ./apps/scanner-web/public
+COPY --from=builder /app/apps/scanner-web/.next/static ./apps/scanner-web/.next/static
 
-# Ensure optional folders exist
-RUN mkdir -p public
+# Set the user to a non-root user for security
+USER node
 
-# Install deps and build
-RUN npm install --no-audit --no-fund
-RUN npm run build
-
-# 2) Runner image: minimal production runtime
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-# Create a non-root user
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
-
-ARG APP_DIR=/app
-ARG APP_NAME=scanner-web
-
-# Copy standalone output (ensure server.js ends up at /app/server.js)
-COPY --from=builder /app/apps/${APP_NAME}/public/ ${APP_DIR}/public/
-COPY --from=builder /app/apps/${APP_NAME}/.next/standalone/ ${APP_DIR}/
-COPY --from=builder /app/apps/${APP_NAME}/.next/static/ ${APP_DIR}/.next/static/
-COPY --from=builder /app/apps/${APP_NAME}/.next/BUILD_ID ${APP_DIR}/.next/BUILD_ID
-
-# Set ownership
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
+# Expose the port
 EXPOSE 3000
 
-ENV PORT=3000
-
-# Optional: allow configuring API base via env
-# TICKETS_API_URL will be read by the proxy route
-
-CMD ["node", "server.js"]
-
-
+# The command to run the standalone server (located at apps/scanner-web/server.js)
+CMD ["node", "apps/scanner-web/server.js"]

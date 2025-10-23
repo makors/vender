@@ -21,3 +21,18 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
+  scanner-web:
+    build:
+      context: .
+      dockerfile: apps/scanner-web/Dockerfile
+    env_file:
+      - ./.env
+      - ./apps/scanner-web/.env.local
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
