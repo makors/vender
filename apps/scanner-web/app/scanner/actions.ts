@@ -12,7 +12,7 @@ export async function signOut() {
     value: "",
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env["NODE_ENV"] === "production",
     path: "/",
     maxAge: 0,
   });

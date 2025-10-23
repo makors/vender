@@ -4,7 +4,7 @@ export const ACCESS_COOKIE_NAME = "vender_scanner_access";
 const encoder = new TextEncoder();
 
 export function getConfiguredAccessCode(): string | undefined {
-  return process.env.SCANNER_ACCESS_CODE;
+  return process.env['SCANNER_ACCESS_CODE'];
 }
 
 export function isAuthorized(code: string | undefined | null): boolean {

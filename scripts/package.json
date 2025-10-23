@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "manage": "bun run src/manage_tickets.ts",
+    "create-event": "bun run src/create_event.ts",
+    "view-events": "bun run src/view_events.ts"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

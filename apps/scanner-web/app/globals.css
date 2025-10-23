@@ -34,38 +34,11 @@
   --radius: 0.75rem;
 }
 
-body {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, hsla(217, 95%, 61%, 0.15), transparent 45%),
-    radial-gradient(circle at bottom, hsla(280, 85%, 65%, 0.15), transparent 45%),
-    hsl(var(--background));
-}
-
-::-webkit-scrollbar {
-  width: 0.65rem;
-  height: 0.65rem;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: hsla(210, 40%, 96%, 0.15);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-  }
-}
-
-@layer components {
-  .glass {
-    @apply border border-white/5 bg-white/5 backdrop-blur-xl;
+    @apply bg-background text-foreground;
   }
 }

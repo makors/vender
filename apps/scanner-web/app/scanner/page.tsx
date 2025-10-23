@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import { ACCESS_COOKIE_NAME, isAuthorized } from "@/lib/auth";
 
