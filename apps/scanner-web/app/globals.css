@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222 47% 5%;
+  --foreground: 210 40% 98%;
+
+  --muted: 223 47% 11%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --popover: 222 47% 5%;
+  --popover-foreground: 210 40% 98%;
+
+  --card: 222 47% 8%;
+  --card-foreground: 210 40% 98%;
+
+  --border: 215 27.9% 16.9%;
+  --input: 215 27.9% 16.9%;
+  --ring: 212.7 26.8% 83.9%;
+
+  --primary: 220 70% 50%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 223 47% 11%;
+  --secondary-foreground: 210 40% 98%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --accent: 217 91% 60%;
+  --accent-foreground: 210 40% 98%;
+
+  --radius: 0.75rem;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, hsla(217, 95%, 61%, 0.15), transparent 45%),
+    radial-gradient(circle at bottom, hsla(280, 85%, 65%, 0.15), transparent 45%),
+    hsl(var(--background));
+}
+
+::-webkit-scrollbar {
+  width: 0.65rem;
+  height: 0.65rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: hsla(210, 40%, 96%, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/5 bg-white/5 backdrop-blur-xl;
+  }
+}
