@@ -71,12 +71,14 @@ export default async function webhook(req: Bun.BunRequest<"/stripe/webhook">) {
         ? session.customer
         : session.customer?.id;
 
-    const result = db.run(
-      "INSERT OR IGNORE INTO customers (email, stripe_customer_id) VALUES (?, ?)",
-      [email, stripeCustomerId ?? ""]
-    );
+    // i hope this works
+    const customer = db
+      .query(
+        "INSERT INTO customers (email, stripe_customer_id) VALUES (?, ?) ON CONFLICT(email) DO UPDATE SET stripe_customer_id = excluded.stripe_customer_id RETURNING id"
+      )
+      .get(email, stripeCustomerId ?? "") as { id: number };
 
-    customerId = result.lastInsertRowid as number;
+    customerId = customer.id;
   } catch (error) {
     console.error("Processing failed:", error);
 
