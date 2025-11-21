@@ -1,10 +1,15 @@
-import { getApiBaseUrl } from "../scan/route";
 import { BEARER_TOKEN_COOKIE_NAME } from "../../../lib/auth";
 import { cookies, headers } from "next/headers";
 
 export type AuthApiResponse = {
   token: string;
 };
+
+function getApiBaseUrl(): string {
+  const configured = process.env["TICKETS_API_URL"];
+  if (configured && configured.length > 0) return configured;
+  return process.env["NODE_ENV"] === "production" ? "http://api:3001" : "http://localhost:3001";
+}
 
 export async function POST(req: Request): Promise<Response> {
   const cookieStore = cookies();

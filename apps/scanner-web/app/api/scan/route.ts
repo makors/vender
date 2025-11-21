@@ -11,7 +11,7 @@ export type ScanApiResponse = {
   error?: string;
 };
 
-export function getApiBaseUrl(): string {
+function getApiBaseUrl(): string {
   const configured = process.env["TICKETS_API_URL"];
   if (configured && configured.length > 0) return configured;
   return process.env["NODE_ENV"] === "production" ? "http://api:3001" : "http://localhost:3001";
