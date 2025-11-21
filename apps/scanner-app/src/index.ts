@@ -3,6 +3,7 @@ import prompts from "prompts";
 import { green, yellow, red, bold, dim, cyan } from "kolorist";
 
 const API_URL = process.env["API_URL"] || "http://localhost:3001";
+let bearerToken = "";
 
 // exit on ctrl c!
 process.on("SIGINT", () => {
@@ -14,10 +15,11 @@ function isUuidLike(input: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.trim());
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+async function postJson<T>(path: string, body: unknown, isLogin = false): Promise<T> {
     const res = await fetch(`${API_URL}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        ...(!isLogin ? { Authorization: `Bearer ${bearerToken}` } : {}),
         body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -27,7 +29,9 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${API_URL}${path}`);
+    const res = await fetch(`${API_URL}${path}`, {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+    });
     if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
     }
@@ -122,6 +126,25 @@ async function handleLookup(query: string): Promise<void> {
 
 async function main() {
     console.log(dim(`API: ${API_URL}`));
+
+    const { privateCode } = await prompts({
+        type: "password",
+        name: "privateCode",
+        message: "Enter private code: ",
+    });
+
+    if (!privateCode) {
+        console.log(dim("Cancelled"));
+        process.exit(0);
+    }
+
+    const bearer = await postJson<{ token: string }>("/auth/login", { privateCode }, true);
+    if (!bearer.token) {
+        console.log(red("Failed to login"));
+        process.exit(1);
+    }
+
+    bearerToken = bearer.token;
 
     // If user passed args, use them; else prompt continuously
     const arg = process.argv.slice(2).join(" ").trim();

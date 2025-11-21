@@ -3,11 +3,13 @@ import { checkout, success, cancel } from "./routes/checkout";
 import webhook from "./routes/webhook";
 import { scan } from "./routes/scan";
 import { lookup } from "./routes/lookup";
+import { login } from "./routes/login";
 
 Bun.serve({
   port: 3001,
   routes: {
     "/": () => new Response("tickets are coming soon"),
+    "/auth/login": login,
     "/checkout/:event_id": checkout,
     "/checkout/success": success,
     "/checkout/cancel": cancel,

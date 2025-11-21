@@ -1,4 +1,5 @@
 import db from "../db";
+import { isLoggedIn } from "./login";
 
 type LookupRow = {
     ticket_id: string;
@@ -140,6 +141,11 @@ function computeScore(row: LookupRow, qRaw: string): number {
 export async function lookup(req: Bun.BunRequest<"/lookup">): Promise<Response> {
     if (req.method !== "GET") {
         return new Response("Method Not Allowed", { status: 405 });
+    }
+
+    const loggedIn = await isLoggedIn(req.headers.get("Authorization")?.split(" ")[1] || "");
+    if (!loggedIn) {
+        return new Response("Unauthorized", { status: 401 });
     }
 
     const url = new URL(req.url);

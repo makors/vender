@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-import { ACCESS_COOKIE_NAME, isAuthorized } from "@/lib/auth";
+import { BEARER_TOKEN_COOKIE_NAME } from "../../lib/auth";
 
 import { ScannerConsole } from "./scanner-console";
 
@@ -12,11 +12,12 @@ export const metadata: Metadata = {
 
 export default function ScannerPage() {
   const cookieStore = cookies();
-  const code = cookieStore.get(ACCESS_COOKIE_NAME)?.value;
+  const code = cookieStore.get(BEARER_TOKEN_COOKIE_NAME)?.value;
 
-  if (!isAuthorized(code)) {
+  if (!code || code.length === 0) {
     redirect("/login");
   }
 
+  // this is fine because no data can be accessed without the bearer token
   return <ScannerConsole />;
 }

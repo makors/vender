@@ -1,4 +1,5 @@
 import db from "../db";
+import { isLoggedIn } from "./login";
 
 type ScanResponse = {
     status: "invalid" | "already_scanned" | "valid";
@@ -20,6 +21,11 @@ export async function scan(req: Bun.BunRequest<"/scan">): Promise<Response> {
             status: 400,
             headers: { "Content-Type": "application/json" },
         });
+    }
+
+    const loggedIn = await isLoggedIn(req.headers.get("Authorization")?.split(" ")[1] || "");
+    if (!loggedIn) {
+        return new Response("Unauthorized", { status: 401 });
     }
 
     const body = await req.json().catch(() => null) as { ticketId?: string } | null;

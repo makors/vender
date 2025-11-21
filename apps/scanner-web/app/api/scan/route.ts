@@ -1,3 +1,6 @@
+import { BEARER_TOKEN_COOKIE_NAME } from "../../../lib/auth";
+import { cookies } from "next/headers";
+
 export type ScanApiResponse = {
   status: "invalid" | "already_scanned" | "valid";
   ticketId?: string;
@@ -8,13 +11,19 @@ export type ScanApiResponse = {
   error?: string;
 };
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   const configured = process.env["TICKETS_API_URL"];
   if (configured && configured.length > 0) return configured;
   return process.env["NODE_ENV"] === "production" ? "http://api:3001" : "http://localhost:3001";
 }
 
 export async function POST(req: Request): Promise<Response> {
+  const cookieStore = cookies();
+  const bearerToken = cookieStore.get(BEARER_TOKEN_COOKIE_NAME)?.value || "";
+  if (!bearerToken) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  
   const body = await req.json().catch(() => null) as { ticketId?: string } | null;
   const ticketId = body?.ticketId;
   if (!ticketId) {
@@ -28,7 +37,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const upstream = await fetch(`${base}/scan`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${bearerToken}` },
       body: JSON.stringify({ ticketId }),
     });
 

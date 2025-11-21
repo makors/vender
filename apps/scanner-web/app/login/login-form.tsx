@@ -3,20 +3,27 @@
 import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 
-import { authenticate, type AuthFormState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { redirect } from "next/navigation";
 
 export function LoginForm() {
-  const [state, setState] = useState<AuthFormState>({});
+  const [state, setState] = useState<{ error?: string }>({});
   const [isPending, setIsPending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setIsPending(true);
     try {
-      const result = await authenticate(state, formData);
-      setState(result);
+      const result = await fetch("/api/login", {
+        method: "POST",
+        body: JSON.stringify({ secretCode: formData.get("secretCode") }),
+      });
+      if (!result.ok) {
+        setState({ error: "Failed to login" });
+        return;
+      }
+      redirect("/scanner");
     } finally {
       setIsPending(false);
     }
@@ -27,10 +34,10 @@ export function LoginForm() {
       <CardContent className="pt-6">
         <form action={handleSubmit} className="space-y-4">
           <Input
-            id="accessCode"
-            name="accessCode"
+            id="secretCode"
+            name="secretCode"
             type="password"
-            placeholder="Access code"
+            placeholder="Secret code"
             inputMode="numeric"
             required
             minLength={4}

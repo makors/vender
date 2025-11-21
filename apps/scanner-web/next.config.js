@@ -1,12 +1,13 @@
-const path = require('path');
+const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
-  // Ensure tracing works from the monorepo root so 'next' and deps are included
+  output: "standalone",
+  basePath: "/scanner-next",
+  trailingSlash: false,
   experimental: {
-    outputFileTracingRoot: path.join(__dirname, '../../'),
+    outputFileTracingRoot: path.join(__dirname, "../../"),
   },
 };
 
