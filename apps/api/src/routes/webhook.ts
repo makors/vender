@@ -10,7 +10,7 @@ const redis = new RedisClient("redis://redis:6379");
 
 export default async function webhook(req: Bun.BunRequest<"/stripe/webhook">) {
   const signature = req.headers.get("stripe-signature") || "";
-  
+
   // Bun optimization: use .text() instead of Buffer.from(await req.arrayBuffer())
   const rawBody = await req.text();
 
@@ -41,16 +41,18 @@ export default async function webhook(req: Bun.BunRequest<"/stripe/webhook">) {
   // SET key value NX (only if not exists) EX (expire seconds)
   // We set a 24-hour expiration. After 24h, we assume Stripe won't retry anymore.
   const isNewEvent = await redis.set(idempotencyKey, "processing");
-  await redis.expire(idempotencyKey, 60 * 60 * 24);
+  await redis.expire(idempotencyKey, 60 * 60 * 24 * 30); // i doubt stripe will retry after 30 days
 
   if (!isNewEvent) {
-    console.log(`[Idempotency] Event ${session.id} already processed or processing.`);
+    console.log(
+      `[Idempotency] Event ${session.id} already processed or processing.`
+    );
     return new Response("Already Processed", { status: 200 });
   }
 
-  // ---------------------------------------------------------
-  // 2. PROCESSING
-  // ---------------------------------------------------------
+  let customerId: number = 0;
+
+  //  --- process customer (create if not exists) ---
   try {
     // -- Validation --
     const email = session.customer_details?.email || session.customer_email;
@@ -64,21 +66,18 @@ export default async function webhook(req: Bun.BunRequest<"/stripe/webhook">) {
 
     // -- Customer Upsert (SQLite) --
     // We still check DB for customer to get the ID
-    const stripeCustomerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
-    
-    db.run(
+    const stripeCustomerId =
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id;
+
+    const result = db.run(
       "INSERT OR IGNORE INTO customers (email, stripe_customer_id) VALUES (?, ?)",
       [email, stripeCustomerId ?? ""]
     );
 
-    // -- Update Redis Status --
-    // Optional: Update the value from "processing" to "completed" for debugging clarity
-    await redis.set(idempotencyKey, "completed", "KEEPTTL");
-
+    customerId = result.lastInsertRowid as number;
   } catch (error) {
-    // ---------------------------------------------------------
-    // 3. ERROR RECOVERY
-    // ---------------------------------------------------------
     console.error("Processing failed:", error);
 
     // CRITICAL: If we failed to write to the DB, we MUST delete the Redis key.
@@ -89,12 +88,39 @@ export default async function webhook(req: Bun.BunRequest<"/stripe/webhook">) {
     return new Response("Internal Server Error", { status: 500 });
   }
 
+  // create ticket
+  const ticketId = uuid();
+  try {
+    if (customerId === 0) {
+      console.error("Customer ID is 0", { sessionId: session.id });
+      return new Response("Customer ID is 0", { status: 500 });
+    }
+
+    db.run(
+      "INSERT INTO tickets (id, event_id, customer_id, student_name, created_at) VALUES (?, ?, ?, ?, ?)",
+      [
+        ticketId,
+        (session.metadata?.["event_id"] as string) ?? "",
+        customerId,
+        session.custom_fields?.[0]?.text?.value ?? null,
+        new Date().toISOString(),
+      ]
+    );
+
+    // we are only completed once we add the ticket to the db
+    await redis.set(idempotencyKey, "completed", "KEEPTTL");
+  } catch (error) {
+    console.error("Ticket creation failed:", error);
+    await redis.del(idempotencyKey);
+    return new Response("Internal Server Error", { status: 500 });
+  }
+
   // ---------------------------------------------------------
   // 4. SIDE EFFECTS (Email)
   // ---------------------------------------------------------
   // We run this OUTSIDE the main try/catch block that handles DB logic.
   // If the DB write succeeded, we return 200 to Stripe even if the email fails.
-  
+
   const email = session.customer_details?.email || session.customer_email || "";
   const studentName = session.custom_fields?.[0]?.text?.value ?? "Student";
 
@@ -102,9 +128,9 @@ export default async function webhook(req: Bun.BunRequest<"/stripe/webhook">) {
   sendTicketSuccessEmail({
     studentName,
     recipientEmail: email,
-    ticketId: uuid(), // Note: Use the variable from above in real code
-    eventName: session.metadata?.["event_name"] || "Event"
-  }).catch(err => console.error("Email failed to send", err));
+    ticketId: ticketId, // Note: Use the variable from above in real code
+    eventName: session.metadata?.["event_name"] || "Event",
+  }).catch((err) => console.error("Email failed to send", err));
 
   return new Response("Success", { status: 200 });
 }
