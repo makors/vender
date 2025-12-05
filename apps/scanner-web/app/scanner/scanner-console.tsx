@@ -25,8 +25,8 @@ type StatusKind = "idle" | "scanning" | "success" | "error" | "duplicate" | "wro
 interface StatusState {
   kind: StatusKind;
   message: string;
-  ticketId?: string;
-  subMessage?: string;
+  ticketId?: string | undefined;
+  subMessage?: string | undefined;
 }
 
 const THROTTLE_MS = 1500;
