@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-import { BEARER_TOKEN_COOKIE_NAME } from "../../lib/auth";
+import { BEARER_TOKEN_COOKIE_NAME, SELECTED_EVENT_COOKIE_NAME } from "../../lib/auth";
 
 import { LoginForm } from "./login-form";
 
@@ -12,10 +12,11 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   const cookieStore = cookies();
-  const code = cookieStore.get(BEARER_TOKEN_COOKIE_NAME)?.value;
+  const token = cookieStore.get(BEARER_TOKEN_COOKIE_NAME)?.value;
 
-  if (code && code.length > 0) {
-    redirect("/scanner");
+  if (token && token.length > 0) {
+    const selectedEvent = cookieStore.get(SELECTED_EVENT_COOKIE_NAME)?.value;
+    redirect(selectedEvent ? "/scanner" : "/events");
   }
 
   return (

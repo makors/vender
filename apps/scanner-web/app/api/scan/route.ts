@@ -1,10 +1,11 @@
-import { BEARER_TOKEN_COOKIE_NAME } from "../../../lib/auth";
+import { BEARER_TOKEN_COOKIE_NAME, SELECTED_EVENT_COOKIE_NAME } from "../../../lib/auth";
 import { cookies } from "next/headers";
 
 export type ScanApiResponse = {
-  status: "invalid" | "already_scanned" | "valid";
+  status: "invalid" | "already_scanned" | "valid" | "wrong_event";
   ticketId?: string;
   eventId?: string;
+  eventName?: string;
   email?: string;
   studentName?: string | null;
   scannedAt?: string | null;
@@ -23,6 +24,25 @@ export async function POST(req: Request): Promise<Response> {
   if (!bearerToken) {
     return new Response("Unauthorized", { status: 401 });
   }
+
+  // Get the selected event from cookie
+  const selectedEventCookie = cookieStore.get(SELECTED_EVENT_COOKIE_NAME)?.value;
+  if (!selectedEventCookie) {
+    return new Response(JSON.stringify({ error: "No event selected" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  let selectedEvent: { id: string; name: string };
+  try {
+    selectedEvent = JSON.parse(selectedEventCookie);
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid event selection" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   
   const body = await req.json().catch(() => null) as { ticketId?: string } | null;
   const ticketId = body?.ticketId;
@@ -38,7 +58,7 @@ export async function POST(req: Request): Promise<Response> {
     const upstream = await fetch(`${base}/scan`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${bearerToken}` },
-      body: JSON.stringify({ ticketId }),
+      body: JSON.stringify({ ticketId, eventId: selectedEvent.id }),
     });
 
     const contentType = upstream.headers.get("content-type") || "";

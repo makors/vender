@@ -23,7 +23,7 @@ export function LoginForm() {
         setState({ error: "Failed to login" });
         return;
       }
-      redirect("/scanner");
+      redirect("/events");
     } finally {
       setIsPending(false);
     }

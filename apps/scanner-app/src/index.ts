@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import prompts from "prompts";
-import { green, yellow, red, bold, dim, cyan } from "kolorist";
+import { green, yellow, red, bold, dim, cyan, magenta } from "kolorist";
 
 const API_URL = process.env["API_URL"] || "http://localhost:3001";
 let bearerToken = "";
+let selectedEventId = "";
+let selectedEventName = "";
 
 // exit on ctrl c!
 process.on("SIGINT", () => {
@@ -39,12 +41,20 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 type ScanResponse = {
-    status: "invalid" | "already_scanned" | "valid";
+    status: "invalid" | "already_scanned" | "valid" | "wrong_event";
     ticketId?: string;
     eventId?: string;
+    eventName?: string;
     email?: string;
     studentName?: string | null;
     scannedAt?: string | null;
+};
+
+type EventWithStats = {
+    id: string;
+    name: string;
+    ticketCount: number;
+    scannedCount: number;
 };
 
 type LookupItem = {
@@ -57,8 +67,8 @@ type LookupItem = {
 
 async function handleScan(ticketId: string): Promise<void> {
     try {
-        const data = await postJson<ScanResponse>("/scan", { ticketId });
-            if (data.status === "valid") {
+        const data = await postJson<ScanResponse>("/scan", { ticketId, eventId: selectedEventId });
+        if (data.status === "valid") {
             console.log(green(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
             console.log(green(bold("VALID")), dim(`ticket: ${data.ticketId}`), cyan(data.studentName ?? ""));
             console.log(green(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
@@ -66,6 +76,10 @@ async function handleScan(ticketId: string): Promise<void> {
             console.log(yellow(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
             console.log(yellow(bold("ALREADY SCANNED")), dim(`ticket: ${data.ticketId}`), cyan(data.studentName ?? ""), dim(`at ${data.scannedAt}`));
             console.log(yellow(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
+        } else if (data.status === "wrong_event") {
+            console.log(magenta(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
+            console.log(magenta(bold("WRONG EVENT")), dim(`ticket: ${data.ticketId}`), cyan(data.eventName ? `for "${data.eventName}"` : ""));
+            console.log(magenta(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
         } else {
             console.log(red(bold("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")))
             console.log(red(bold("INVALID")), dim(`ticket: ${ticketId}`));
@@ -124,6 +138,48 @@ async function handleLookup(query: string): Promise<void> {
     }
 }
 
+async function selectEvent(): Promise<boolean> {
+    try {
+        const { events } = await getJson<{ events: EventWithStats[] }>("/events");
+        
+        if (!events || events.length === 0) {
+            console.log(red("No events found"));
+            return false;
+        }
+
+        const choices = events.map((e) => ({
+            title: `${e.name}  ${dim(`${e.scannedCount}/${e.ticketCount} scanned`)}`,
+            value: e.id,
+            description: e.id,
+        }));
+
+        const answer = await prompts({
+            type: "select",
+            name: "eventId",
+            message: "Select an event to scan for",
+            choices,
+            initial: 0,
+        }, {
+            onCancel: () => {
+                console.log(dim("Cancelled"));
+                process.exit(0);
+            }
+        });
+
+        if (!answer.eventId) {
+            return false;
+        }
+
+        selectedEventId = answer.eventId;
+        selectedEventName = events.find(e => e.id === answer.eventId)?.name ?? "";
+        console.log(green(`Selected event: ${bold(selectedEventName)}`));
+        return true;
+    } catch (err) {
+        console.error(red(`Failed to fetch events: ${(err as Error).message}`));
+        return false;
+    }
+}
+
 async function main() {
     console.log(dim(`API: ${API_URL}`));
 
@@ -146,13 +202,20 @@ async function main() {
 
     bearerToken = bearer.token;
 
+    // Select an event first
+    const eventSelected = await selectEvent();
+    if (!eventSelected) {
+        console.log(red("No event selected"));
+        process.exit(1);
+    }
+
     // If user passed args, use them; else prompt continuously
     const arg = process.argv.slice(2).join(" ").trim();
     while (true) {
         const input = arg || (await prompts({
             type: "text",
             name: "value",
-            message: "Scan QR / Enter ticket ID, name, or email",
+            message: `[${selectedEventName}] Scan QR / Enter ticket ID, name, or email`,
         }, {
             onCancel: () => {
                 console.log(dim("Cancelled"));

@@ -7,7 +7,8 @@
     "manage": "bun run src/manage_tickets.ts",
     "create-event": "bun run src/create_event.ts",
     "view-events": "bun run src/view_events.ts",
-    "send-reminders": "bun run src/send_ticket_reminders.ts"
+    "send-reminders": "bun run src/send_ticket_reminders.ts",
+    "create-ticket": "bun run src/create_tickets_with_email.ts"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

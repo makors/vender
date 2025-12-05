@@ -1,30 +1,32 @@
 "use client";
 
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { CheckCircle2, XCircle, LogOut, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, LogOut, AlertCircle, ChevronDown, Ban } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { signOut } from "./actions";
+import { signOut, changeEvent } from "./actions";
 
 type ScanApiResponse = {
-  status: "invalid" | "already_scanned" | "valid";
+  status: "invalid" | "already_scanned" | "valid" | "wrong_event";
   ticketId?: string;
   eventId?: string;
+  eventName?: string;
   email?: string;
   studentName?: string | null;
   scannedAt?: string | null;
   error?: string;
 };
 
-type StatusKind = "idle" | "scanning" | "success" | "error" | "duplicate";
+type StatusKind = "idle" | "scanning" | "success" | "error" | "duplicate" | "wrong_event";
 
 interface StatusState {
   kind: StatusKind;
   message: string;
   ticketId?: string;
+  subMessage?: string;
 }
 
 const THROTTLE_MS = 1500;
@@ -43,7 +45,14 @@ async function submitScan(ticketId: string): Promise<ScanApiResponse> {
   return json as ScanApiResponse;
 }
 
-export function ScannerConsole() {
+type Props = {
+  selectedEvent: {
+    id: string;
+    name: string;
+  };
+};
+
+export function ScannerConsole({ selectedEvent }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -121,6 +130,15 @@ export function ScannerConsole() {
           playFeedback(false);
         } else if (response.status === "invalid") {
           setStatus({ kind: "error", message: "Invalid Ticket", ticketId: value });
+          vibrate([100, 50, 100]);
+          playFeedback(false);
+        } else if (response.status === "wrong_event") {
+          setStatus({ 
+            kind: "wrong_event", 
+            message: "Wrong Event", 
+            ticketId: response.ticketId || value,
+            subMessage: response.eventName ? `This ticket is for "${response.eventName}"` : undefined,
+          });
           vibrate([100, 50, 100]);
           playFeedback(false);
         } else if (response.status === "already_scanned") {
@@ -284,6 +302,12 @@ export function ScannerConsole() {
     });
   };
 
+  const handleChangeEvent = () => {
+    startTransition(() => {
+      void changeEvent();
+    });
+  };
+
   // Render status overlay
   const renderStatus = () => {
     if (status.kind === "idle") return null;
@@ -300,6 +324,12 @@ export function ScannerConsole() {
         bg: "bg-red-500/20",
         border: "border-red-500/50",
         text: "text-red-400",
+      },
+      wrong_event: {
+        icon: <Ban className="w-20 h-20" />,
+        bg: "bg-orange-500/20",
+        border: "border-orange-500/50",
+        text: "text-orange-400",
       },
       duplicate: {
         icon: <AlertCircle className="w-20 h-20" />,
@@ -331,6 +361,11 @@ export function ScannerConsole() {
             <div className={cn("text-3xl font-bold mb-2", config.text)}>
               {status.message}
             </div>
+            {status.subMessage && (
+              <div className="text-base text-white/80 mb-2">
+                {status.subMessage}
+              </div>
+            )}
             {status.ticketId && (
               <div className="text-lg text-white/70 font-mono">
                 {status.ticketId}
@@ -346,9 +381,20 @@ export function ScannerConsole() {
     <div className="fixed inset-0 flex flex-col bg-black">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
-        <div className="text-lg font-semibold text-white/90">
-          Vender Scanner
-        </div>
+        <button 
+          onClick={handleChangeEvent}
+          className="flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
+        >
+          <div>
+            <div className="text-xs text-white/50 font-medium uppercase tracking-wider">
+              Scanning for
+            </div>
+            <div className="text-lg font-semibold text-white/90 flex items-center gap-1">
+              {selectedEvent.name}
+              <ChevronDown className="h-4 w-4 text-white/50" />
+            </div>
+          </div>
+        </button>
         <Button 
           variant="ghost" 
           size="sm"

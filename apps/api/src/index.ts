@@ -4,6 +4,7 @@ import webhook from "./routes/webhook";
 import { scan } from "./routes/scan";
 import { lookup } from "./routes/lookup";
 import { login } from "./routes/login";
+import { events } from "./routes/events";
 
 Bun.serve({
   port: 3001,
@@ -16,6 +17,7 @@ Bun.serve({
     "/stripe/webhook": webhook,
     "/scan": scan,
     "/lookup": lookup,
+    "/events": events,
   },
 });
 
