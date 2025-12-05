@@ -20,8 +20,10 @@ function isUuidLike(input: string): boolean {
 async function postJson<T>(path: string, body: unknown, isLogin = false): Promise<T> {
     const res = await fetch(`${API_URL}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        ...(!isLogin ? { Authorization: `Bearer ${bearerToken}` } : {}),
+        headers: {
+            "Content-Type": "application/json",
+            ...(!isLogin ? { Authorization: `Bearer ${bearerToken}` } : {}),
+        },
         body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -92,7 +94,7 @@ async function handleScan(ticketId: string): Promise<void> {
 
 async function handleLookup(query: string): Promise<void> {
     try {
-        const { results } = await getJson<{ results: LookupItem[] }>(`/lookup?q=${encodeURIComponent(query)}`);
+        const { results } = await getJson<{ results: LookupItem[] }>(`/lookup?q=${encodeURIComponent(query)}&eventId=${encodeURIComponent(selectedEventId)}`);
         if (!results.length) {
             console.log(red("No results"));
             return;

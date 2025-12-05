@@ -150,6 +150,7 @@ export async function lookup(req: Bun.BunRequest<"/lookup">): Promise<Response> 
 
     const url = new URL(req.url);
     const q = (url.searchParams.get("q") || "").trim();
+    const eventId = url.searchParams.get("eventId") || "";
 
     if (!q) {
         return new Response(JSON.stringify({ results: [] }), {
@@ -161,14 +162,24 @@ export async function lookup(req: Bun.BunRequest<"/lookup">): Promise<Response> 
     const escaped = q.replace(/%/g, "\\%").replace(/_/g, "\\_");
     const like = `%${escaped}%`;
 
-    const candidates = db.query(
-        `SELECT t.id as ticket_id, t.event_id, c.email, t.student_name, t.scanned_at, t.created_at
-         FROM tickets t
-         JOIN customers c ON c.id = t.customer_id
-         WHERE (t.student_name LIKE ? ESCAPE '\\' OR c.email LIKE ? ESCAPE '\\' OR t.id LIKE ? ESCAPE '\\')
-         ORDER BY t.created_at DESC
-         LIMIT 200`
-    ).all(like, like, like) as LookupRow[];
+    // Filter by eventId if provided
+    const candidates = eventId
+        ? db.query(
+            `SELECT t.id as ticket_id, t.event_id, c.email, t.student_name, t.scanned_at, t.created_at
+             FROM tickets t
+             JOIN customers c ON c.id = t.customer_id
+             WHERE t.event_id = ? AND (t.student_name LIKE ? ESCAPE '\\' OR c.email LIKE ? ESCAPE '\\' OR t.id LIKE ? ESCAPE '\\')
+             ORDER BY t.created_at DESC
+             LIMIT 200`
+        ).all(eventId, like, like, like) as LookupRow[]
+        : db.query(
+            `SELECT t.id as ticket_id, t.event_id, c.email, t.student_name, t.scanned_at, t.created_at
+             FROM tickets t
+             JOIN customers c ON c.id = t.customer_id
+             WHERE (t.student_name LIKE ? ESCAPE '\\' OR c.email LIKE ? ESCAPE '\\' OR t.id LIKE ? ESCAPE '\\')
+             ORDER BY t.created_at DESC
+             LIMIT 200`
+        ).all(like, like, like) as LookupRow[];
 
     // Rank candidates for accuracy
     const ranked = candidates
